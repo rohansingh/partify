@@ -1,0 +1,186 @@
+<!DOCTYPE html> 
+<html> 
+<head> 
+  <title>Partify</title> 
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+  
+  <script type="text/javascript" src="http://maps.google.com/maps/api/js?sensor=false"></script>
+  
+  <style type="text/css">
+  <!--
+  
+  #nearbyInfo {
+    display: none
+  }
+  
+  -->
+  </style>
+</head>
+<body>
+  
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.4.4/jquery.js"></script>
+  <script src="https://github.com/douglascrockford/JSON-js/raw/master/json2.js"></script>
+  
+  <script type="text/javascript">
+  // <![CDATA[
+  
+  var map, geocoder;
+  var playerLocation, playerId;
+  var playlist, player;
+  
+  jQuery.extend({
+    postJSON: function(url, data, callback) {
+      return jQuery.ajax({
+        type: "POST",
+        url: url,
+        data: JSON.stringify(data),
+        success: callback,
+        dataType: "json",
+        contentType: "application/json",
+        processData: false
+      });
+    }
+  });
+  
+  $(function() {    
+    var latlng = new google.maps.LatLng(-34.397, 150.644);
+    var myOptions = {
+      zoom: 8,
+      center: latlng,
+      mapTypeId: google.maps.MapTypeId.ROADMAP
+    };
+    
+    map = new google.maps.Map($("#map")[0], myOptions);
+    geocoder = new google.maps.Geocoder();
+  
+    $("#search").click(function() {
+      var address = $("#address").val();
+      
+      geocoder.geocode({ "address": address}, onGeocodeComplete);
+    });
+  });
+  
+  function onGeocodeComplete(results, status) {
+    if (status != "OK"){
+      // Display an error to the user or something.
+      return;
+    }
+    
+    // For now, only caring about the first result (I'm feeling lucky!)
+    var result = results[0].geometry.location;
+    playerLocation = [result.lat(), result.lng()];
+    
+    // Show and update the number of nearby devices intermittently.
+    showNearbyDevices();
+    
+    // Grab the playlist.
+    $("#playerWrapper")
+      .slideUp(function() {
+        $(this).empty()
+        .append($("<span>").text("Generating playlist..."))
+        .slideDown();
+      });
+      
+    getPlaylist();
+  }
+  
+  function showNearbyDevices() {
+    var request = {
+      "playerId": playerId,
+      "lat": playerLocation[0],
+      "long": playerLocation[1],
+      "maxDistance": 500
+    }
+    
+    var nearbyInfo = $("#nearbyInfo");
+    var nearbyDeviceCount = $(nearbyInfo).find("#nearbyDeviceCount")
+    
+    $.postJSON("/api/getNearbyDevices", request,
+      function(result) {
+        nearbyInfo.slideUp();
+        nearbyDeviceCount.text(result.count);
+        nearbyInfo.slideDown();
+        
+        setTimeout("showNearbyDevices()", 120000);
+      });
+  }
+  
+  function getPlaylist() {    
+    var request = {
+      "playerId": playerId,
+      "lat": playerLocation[0],
+      "long": playerLocation[1],
+      "maxDistance": 500,
+      "maxResults": 20
+    }
+    
+    $.postJSON("/api/getPlaylist", request,
+      function(result) {
+        playerId = result.playerId;
+        
+        if (!result.ready){
+          setTimeout("getPlaylist()", 500)
+        }
+        else {
+          playlist = result.tracks;
+          createPlayer(playlist);
+        }
+      });
+  }
+  
+  function createPlayer(playlist) {
+    player = $("<object>", { width: "400", height: "400" });
+    
+    vars = "hostname=cowbell.grooveshark.com&songIDs=" + getSongIds(playlist) +
+      "&style=metal&bbg=000000&bt=FFFFFF&bfg=666666&p=1";
+    
+    player
+      .append(createParam("movie", "http://listen.grooveshark.com/widget.swf"))
+      .append(createParam("wmode", "window"))
+      .append(createParam("allowScriptAccess", "always"))
+      .append(createParam("flashvars", vars))
+      
+      .append($("<embed>", {
+        src: "http://listen.grooveshark.com/widget.swf",
+        type: "application/x-shockwave-flash",
+        width: "400",
+        height: "400",
+        flashvars: vars,
+        allowscriptaccess: "always",
+        wmode: "window"
+      }));
+      
+    $("#playerWrapper")
+      .slideUp(function() {
+        $(this).empty()
+        .append(player)
+        .slideDown();
+      });
+  }
+  
+  function getSongIds(playlist) {
+    return $.map(playlist, function(track) {
+      return track.tinySongId;
+    }).join(",");
+  }
+  
+  function createParam(name, value) {
+    return $("<param>", { name: name, value: value });
+  }
+  
+  // ]]>
+  </script>
+  
+  <div id="map" style="display: none"></div>
+  
+  <input type="text" id="address" />
+  <button type="button" id="search">Search</button>
+  
+  <div id="nearbyInfo">
+    There are <span id="nearbyDeviceCount"></span> Partify users nearby.
+  </div>
+  
+  <div id="playerWrapper"></div>
+  
+</body>
+</html>
