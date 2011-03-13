@@ -7,19 +7,16 @@ Created on Jan 17, 2011
 import cherrypy
 from cherrypy import request
 
-from api import Api
-
-import os.path
-current_dir = os.path.dirname(os.path.abspath(__file__))
+from partify.api import Api
 
 class Root:
     @cherrypy.expose
     def index(self):
         raise cherrypy.HTTPRedirect("/index.html")
 
-cherrypy.config.update('cherrypy.conf')
+cherrypy.config.update('partify/cherrypy.conf')
     
-cherrypy.tree.mount(Root(), '/', config='root.conf')
-cherrypy.tree.mount(Api(), '/api', config='api.conf')
+cherrypy.tree.mount(Root(), '/', config='partify/root.conf')
+cherrypy.tree.mount(Api(), '/api', config='partify/api.conf')
 
 cherrypy.engine.start()
