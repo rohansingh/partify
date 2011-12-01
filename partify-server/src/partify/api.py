@@ -19,7 +19,7 @@ config.ECHO_NEST_API_KEY = "HPBS0ECKDVKGRUIGR"
 
 from groovewalrus import tinysong
 
-mongoConnection = Connection("localhost", 2365)
+mongoConnection = Connection("localhost", 27017)
 db = mongoConnection.partify
 
 db.devices.ensure_index([("location", GEO2D)])
