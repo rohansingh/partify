@@ -35,7 +35,7 @@ class Api:
                    "accuracy": request.json["accuracy"],
                    "last_location_update": time.time() }
         
-        query = ({ "device_id": request.json["deviceId"] } if "deviceId" in request.json
+        query = ({ "deviceId": request.json["deviceId"] } if "deviceId" in request.json
             else { "deviceId": str(uuid4()) })
             
         device = db.devices.find_and_modify(query, { "$set": device }, True, new = True)
