@@ -11,10 +11,17 @@ Prequisites
 
 Setup
 -----
-`pip install -r requirements.txt`
+
+    $ virtualenv . -p <your python3 path>
+    $ . bin/activate
+    (src)$ pip install -r requirements.txt
+    (src)$ deactivate
 
 Run
 ---
 1.  Run MongoDB on the default port.
 
-2.  `python3 main.py`
+2.  In your shell:
+
+        $ . bin/activate
+        (src)$ python main.py
